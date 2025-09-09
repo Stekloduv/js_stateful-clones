@@ -6,25 +6,41 @@
  *
  * @return {Object[]}
  */
-function transformStateWithClones(state, actions) {
+function transformStateWithClones(State, actions) {
   const stateHistory = [];
-  let currentState = { ...state };
+  let currentState = { ...State };
 
   for (const action of actions) {
-    let newState = { ...currentState };
+    let nextState = { ...currentState };
 
-    if (action.type === 'addProperties') {
-      Object.assign(newState, action.extraData);
-    } else if (action.type === 'removeProperties') {
-      for (const key of action.keysToRemove) {
-        delete newState[key];
+    switch (action.type) {
+      case 'addProperties':
+        Object.assign(nextState, action.extraData);
+        break;
+
+      case 'removeProperties': {
+        const keys = Array.isArray(action.keysToRemove)
+          ? action.keysToRemove
+          : [];
+        for (const key of keys) {
+          delete nextState[key];
+        }
+        break;
       }
-    } else if (action.type === 'clear') {
-      newState = {};
+
+      case 'clear':
+        nextState = {};
+        break;
+
+      default:
+        // залежно від політики: або пропускаємо, або кидаємо помилку
+        // throw new Error(`Unknown action type: ${action.type}`);
+        break;
     }
 
-    stateHistory.push(newState);
-    currentState = newState;
+    // пушимо клон, щоб історія не ламалася при подальших змінах
+    stateHistory.push({ ...nextState });
+    currentState = nextState;
   }
 
   return stateHistory;
